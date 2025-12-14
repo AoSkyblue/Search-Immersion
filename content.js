@@ -441,6 +441,15 @@ function setupDockContextMenu() {
   if (closeBtn) closeBtn.onclick = () => modal.classList.remove('show');
   if (modal) modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('show'); };
 
+  if (closeBtn) closeBtn.onclick = () => modal.classList.remove('show');
+  if (modal) modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('show'); };
+
+  const urlEditIn = document.getElementById('dock-edit-url');
+  const iconEditIn = document.getElementById('dock-edit-icon');
+  if (urlEditIn && iconEditIn) {
+    urlEditIn.addEventListener('blur', () => autoFillIcon(urlEditIn, iconEditIn));
+  }
+
   if (saveBtn) saveBtn.onclick = () => {
     const iconVal = document.getElementById('dock-edit-icon').value;
     const urlVal = document.getElementById('dock-edit-url').value;
@@ -695,6 +704,24 @@ function renderDock() {
   });
   initTiltEffect();
 }
+// アイコン自動入力ヘルパー
+function autoFillIcon(urlInput, iconInput) {
+  const url = urlInput.value;
+  if (!url) return;
+  try {
+    const u = url.startsWith('http') ? url : `https://${url}`;
+    const domain = new URL(u).hostname;
+    const currentIcon = iconInput.value;
+    // アイコンが空、またはデフォルト絵文字なら上書き
+    if (!currentIcon || currentIcon === "🔗") {
+      const origin = new URL(u).origin;
+      iconInput.value = `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(origin)}&size=50`;
+      // 保存トリガーとしてのinputイベント発火
+      iconInput.dispatchEvent(new Event('input'));
+    }
+  } catch (e) { }
+}
+
 function renderDockSettingsList() {
   const list = document.getElementById('dock-settings-list'); list.innerHTML = ''; const items = getDockItems();
   items.forEach((item, index) => {
@@ -712,6 +739,7 @@ function renderDockSettingsList() {
     const d = row.querySelector('.ds-del');
     const save = () => { items[index].icon = iI.value; items[index].url = uI.value; localStorage.setItem('immersion_dock_items', JSON.stringify(items)); renderDock(); };
     iI.oninput = save; uI.oninput = save;
+    uI.onblur = () => autoFillIcon(uI, iI); // URL入力完了時にアイコン自動補完
     d.onclick = () => { items.splice(index, 1); localStorage.setItem('immersion_dock_items', JSON.stringify(items)); renderDockSettingsList(); renderDock(); };
     list.appendChild(row);
   });

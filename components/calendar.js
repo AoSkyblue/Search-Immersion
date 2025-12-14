@@ -362,9 +362,9 @@ async function renderCalendar() {
             cell.style.setProperty('--google-dot-color', dotColor);
         }
 
-        // シングルクリックでスクロール、ダブルクリックで追加
+        // シングルクリックでスクロール、ダブルクリックで追加（常に新規扱い）
         cell.onclick = () => scrollToEvent(d);
-        cell.ondblclick = () => openEventModal(year, month, d);
+        cell.ondblclick = () => openEventModal(year, month, d, true);
 
         grid.appendChild(cell);
     }
@@ -463,7 +463,7 @@ async function renderCalendar() {
 /**
  * イベント編集モーダルを開く
  */
-function openEventModal(year, month, day) {
+function openEventModal(year, month, day, isAddMode = false) {
     const modal = document.getElementById('event-modal');
     const input = document.getElementById('ev-input');
     const timeInput = document.getElementById('ev-time');
@@ -474,7 +474,8 @@ function openEventModal(year, month, day) {
     const delBtn = document.getElementById('ev-delete');
 
     currentEventKey = `event_${year}_${month}_${day}`;
-    const currentVal = localStorage.getItem(currentEventKey) || "";
+    // 追加モードなら読み込まない、そうでなければ読み込む
+    const currentVal = isAddMode ? "" : (localStorage.getItem(currentEventKey) || "");
 
     // データの読み込みとフォームへの設定
     let text = currentVal;
