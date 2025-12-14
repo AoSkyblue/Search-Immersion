@@ -362,7 +362,10 @@ async function renderCalendar() {
             cell.style.setProperty('--google-dot-color', dotColor);
         }
 
-        cell.onclick = () => openEventModal(year, month, d);
+        // シングルクリックでスクロール、ダブルクリックで追加
+        cell.onclick = () => scrollToEvent(d);
+        cell.ondblclick = () => openEventModal(year, month, d);
+
         grid.appendChild(cell);
     }
 
@@ -403,6 +406,7 @@ async function renderCalendar() {
 
             const r = document.createElement('div');
             r.className = 'event-row';
+            r.setAttribute('data-date', d);
             r.innerHTML = `<span class="event-date-badge">${d}</span><span class="event-content">${timeHtml}${text}</span>`;
             r.onclick = () => openEventModal(year, month, d);
             eventList.appendChild(r);
@@ -415,6 +419,7 @@ async function renderCalendar() {
             hasEvent = true;
             const r = document.createElement('div');
             r.className = 'event-row event-row-google';
+            r.setAttribute('data-date', d);
             const timeStr = event.allDay ? '' : new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const color = event.backgroundColor || '#4285f4';
             r.style.borderLeftColor = color;
@@ -618,4 +623,37 @@ export async function setupCalendar(translateFn) {
 
     // 初期レンダリング
     renderCalendar();
+}
+
+/**
+ * イベントリストを指定日のイベントまでスクロール
+ * @param {number} day - 対象の日付
+ */
+function scrollToEvent(day) {
+    const list = document.getElementById('event-list');
+    if (!list) return;
+
+    let target = null;
+    // その日以降のイベントを探す
+    for (let d = day; d <= 31; d++) {
+        target = list.querySelector(`.event-row[data-date="${d}"]`);
+        if (target) break;
+    }
+
+    // もし未来になければ、一番近い過去を探す
+    if (!target) {
+        for (let d = day - 1; d >= 1; d--) {
+            target = list.querySelector(`.event-row[data-date="${d}"]`);
+            if (target) break;
+        }
+    }
+
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // ハイライトアニメーション
+        target.animate([
+            { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+            { backgroundColor: 'transparent' }
+        ], { duration: 1000 });
+    }
 }
