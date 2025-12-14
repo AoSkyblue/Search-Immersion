@@ -225,7 +225,7 @@ function setupSearchAutocomplete(input, t) {
 
             container.appendChild(div);
         });
-        container.style.display = 'block';
+        container.style.cssText = 'display: block !important; max-height: 45vh !important; overflow-y: auto !important;';
         currentFocus = -1;
     };
 

@@ -104,11 +104,14 @@ body.burn-in-active #immersion-root {
 }
 
 .col-center {
-  justify-content: center;
+  justify-content: flex-start !important;
   align-items: center;
   text-align: center;
   z-index: 100;
   position: relative;
+  padding-top: 5vh !important;
+  padding-bottom: 0 !important;
+  /* 下余白は確保 */
 }
 
 body.zen-active .col-left,
@@ -423,17 +426,34 @@ body.zen-active .col-right {
   left: 0;
   right: 0;
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var (--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: 20px;
-  max-height: 300px;
-  overflow-y: auto;
+  max-height: 45vh !important;
+  overflow-y: auto !important;
   display: none;
   z-index: 10000;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   padding: 10px 0;
   margin-top: 8px;
+}
+
+.search-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .suggestion-item {
