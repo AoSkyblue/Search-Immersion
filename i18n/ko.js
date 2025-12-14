@@ -30,6 +30,7 @@
     username_placeholder: "이름 입력...",
     behavior_group: "동작 설정",
     newtab_redirect: "새 탭을 Google로 리다이렉트",
+    search_shortcut_label: "검색 단축키",
     modules_group: "표시 모듈",
     greeting_msg: "인사 메시지",
     weather_card: "날씨 카드",

@@ -30,6 +30,7 @@
     username_placeholder: "Enter name...",
     behavior_group: "Behavior",
     newtab_redirect: "Redirect New Tab to Google",
+    search_shortcut_label: "Search Shortcut Key",
     modules_group: "Modules",
     greeting_msg: "Greeting",
     weather_card: "Weather",

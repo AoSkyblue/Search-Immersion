@@ -30,6 +30,7 @@
     username_placeholder: "名前を入力...",
     behavior_group: "動作設定",
     newtab_redirect: "新しいタブをGoogleにする",
+    search_shortcut_label: "検索ショートカットキー",
     modules_group: "表示モジュール",
     greeting_msg: "挨拶メッセージ",
     weather_card: "天気カード",

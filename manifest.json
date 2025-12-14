@@ -26,5 +26,11 @@
       "js": ["i18n/ja.js", "i18n/en.js", "i18n/ko.js", "content.js"],
       "run_at": "document_end"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["components/*.js"],
+      "matches": ["*://www.google.com/*", "*://www.google.co.jp/*"]
+    }
   ]
 }
