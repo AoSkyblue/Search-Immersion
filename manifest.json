@@ -7,8 +7,15 @@
     "storage",
     "tabs",
     "scripting",
-    "history"
+    "history",
+    "identity"
   ],
+  "oauth2": {
+    "client_id": "533899234098-j3ffugf836jg7efb93e03mb329kpnbdv.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.readonly"
+    ]
+  },
   "host_permissions": [
     "*://*/*",
     "https://raw.githubusercontent.com/*"
@@ -21,16 +28,31 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://www.google.com/*", "*://www.google.co.jp/*"],
-      "css": ["styles.css"],
-      "js": ["i18n/ja.js", "i18n/en.js", "i18n/ko.js", "content.js"],
+      "matches": [
+        "*://www.google.com/*",
+        "*://www.google.co.jp/*"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "js": [
+        "i18n/ja.js",
+        "i18n/en.js",
+        "i18n/ko.js",
+        "content.js"
+      ],
       "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["components/*.js"],
-      "matches": ["*://www.google.com/*", "*://www.google.co.jp/*"]
+      "resources": [
+        "components/*.js"
+      ],
+      "matches": [
+        "*://www.google.com/*",
+        "*://www.google.co.jp/*"
+      ]
     }
   ]
 }

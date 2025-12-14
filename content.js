@@ -1,5 +1,4 @@
 let burnInInterval = null;
-let currentEventKey = null;
 
 const defaultSettings = {
   accent: '#50E3C2',
@@ -186,7 +185,11 @@ function initNestHub() {
       </div>
 
       <div id="card-calendar" class="glass-card tilt-card calendar-card">
-        <div class="label-std" style="text-align:center;"><span id="cal-month">${t('calendar_label')}</span></div>
+        <div class="cal-nav">
+          <span id="cal-prev-month" class="cal-nav-btn">◀</span>
+          <span id="cal-month" class="cal-month-label">${t('calendar_label')}</span>
+          <span id="cal-next-month" class="cal-nav-btn">▶</span>
+        </div>
         <div class="cal-grid" id="cal-grid"></div>
         <div class="event-list-area" id="event-list"></div>
       </div>
@@ -327,6 +330,10 @@ function initNestHub() {
       <div class="glass-card modal-card">
         <div class="st-header"><span class="st-title" id="ev-modal-date">Date</span><span class="close-modal-btn" id="close-event">×</span></div>
         <div style="padding:20px;">
+          <div class="ev-time-row">
+            <input type="time" id="ev-time" class="st-input ev-time-input">
+            <label class="ev-allday-label"><input type="checkbox" id="ev-allday"> ${t('all_day')}</label>
+          </div>
           <input type="text" id="ev-input" class="st-input big-input" placeholder="${t('date_input_placeholder')}" autocomplete="off">
           <div class="modal-actions"><button id="ev-delete" class="st-btn danger-btn">${t('delete_btn')}</button><button id="ev-save" class="st-btn primary-btn">${t('save_btn')}</button></div>
         </div>
@@ -382,7 +389,15 @@ function initNestHub() {
   setupCountdown();
   setupZenMode();
   setupBurnInProtection();
-  renderCalendarSystem();
+  // カレンダー機能を動的importで読み込み（ESモジュール）
+  (async () => {
+    try {
+      const { setupCalendar } = await import(chrome.runtime.getURL('components/calendar.js'));
+      setupCalendar(t);
+    } catch (e) {
+      console.error('Calendar module load failed:', e);
+    }
+  })();
   fetchWeather(city);
   setupCityChange();
   fetchNews();
@@ -643,48 +658,7 @@ function setupBurnInProtection() {
     }, 300000);
   }
 }
-function renderCalendarSystem() {
-  const grid = document.getElementById('cal-grid');
-  const eventList = document.getElementById('event-list');
-  const now = new Date();
-  const year = now.getFullYear(); const month = now.getMonth();
-  const months = [t('jan'), t('feb'), t('mar'), t('apr'), t('may'), t('jun'), t('jul'), t('aug'), t('sep'), t('oct'), t('nov'), t('dec')];
-  const prefs = JSON.parse(localStorage.getItem('immersion_prefs')) || defaultSettings;
-  let myStr = `${months[month]} ${year}`;
-  if (prefs.language === 'ja' || (!prefs.language && navigator.language.startsWith('ja'))) myStr = `${year}年 ${months[month]}`;
-  else if (prefs.language === 'ko' || (!prefs.language && navigator.language.startsWith('ko'))) myStr = `${year}년 ${months[month]}`;
 
-  document.getElementById('cal-month').innerText = myStr;
-  const days = [t('sun'), t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat')];
-  grid.innerHTML = days.map(w => `<div class="cal-head">${w}</div>`).join('');
-  const firstDay = new Date(year, month, 1).getDay();
-  const lastDate = new Date(year, month + 1, 0).getDate();
-  for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
-  for (let d = 1; d <= lastDate; d++) {
-    const cell = document.createElement('div');
-    cell.className = 'cal-cell'; cell.innerText = d;
-    if (d === now.getDate()) cell.classList.add('cal-today');
-    const key = `event_${year}_${month}_${d}`;
-    if (localStorage.getItem(key)) cell.classList.add('cal-has-event');
-    cell.onclick = () => openEventModal(year, month, d);
-    grid.appendChild(cell);
-  }
-  eventList.innerHTML = ''; let h = false;
-  for (let d = 1; d <= lastDate; d++) {
-    const k = `event_${year}_${month}_${d}`; const v = localStorage.getItem(k);
-    if (v) { h = true; const r = document.createElement('div'); r.className = 'event-row'; r.innerHTML = `<span class="event-date-badge">${d}</span><span class="event-content">${v}</span>`; r.onclick = () => openEventModal(year, month, d); eventList.appendChild(r); }
-  }
-  if (!h) eventList.innerHTML = `<div style="opacity:0.5; font-size:0.8rem; text-align:center; padding:10px;">${t('no_events')}</div>`;
-}
-function openEventModal(year, month, day) {
-  const modal = document.getElementById('event-modal'); const input = document.getElementById('ev-input'); const dateLabel = document.getElementById('ev-modal-date');
-  const closeBtn = document.getElementById('close-event'); const saveBtn = document.getElementById('ev-save'); const delBtn = document.getElementById('ev-delete');
-  currentEventKey = `event_${year}_${month}_${day}`; const currentVal = localStorage.getItem(currentEventKey) || "";
-  dateLabel.innerText = t('date_modal_title', { month: month + 1, day: day }); input.value = currentVal; modal.classList.add('show'); input.focus();
-  const close = () => modal.classList.remove('show'); closeBtn.onclick = close; modal.onclick = (e) => { if (e.target === modal) close(); };
-  saveBtn.onclick = () => { if (input.value) localStorage.setItem(currentEventKey, input.value); else localStorage.removeItem(currentEventKey); renderCalendarSystem(); close(); };
-  delBtn.onclick = () => { localStorage.removeItem(currentEventKey); renderCalendarSystem(); close(); }; input.onkeydown = (e) => { if (e.key === 'Enter') saveBtn.click(); };
-}
 function setupCountdown() {
   const update = () => {
     const prefs = JSON.parse(localStorage.getItem('immersion_prefs')) || defaultSettings;
@@ -850,7 +824,7 @@ function fetchNews() {
 
 
 function fetchWeather(city) { chrome.runtime.sendMessage({ action: "fetchWeather", city: city }, (res) => { if (!res?.data) return; const w = res.data.current_weather; document.getElementById('w-temp').innerText = `${Math.round(w.temperature)}°`; document.getElementById('w-high').innerText = Math.round(w.temperature + 3); document.getElementById('w-low').innerText = Math.round(w.temperature - 2); document.getElementById('w-wind').innerText = `${w.windspeed}km/h`; document.getElementById('change-city').innerText = `📍 ${city}`; let icon = "☁️"; let text = t('weather_cloudy'); const code = w.weathercode; if (code === 0) { icon = "☀️"; text = t('weather_clear'); } else if (code <= 3) { icon = "⛅️"; text = t('weather_sunny'); } else if (code >= 51) { icon = "🌧"; text = t('weather_rain'); } document.getElementById('w-icon').innerText = icon; document.getElementById('w-cond').innerText = text; }); }
-function initTiltEffect() { const cards = document.querySelectorAll('.tilt-card'); cards.forEach(card => { card.onmousemove = (e) => { const r = card.getBoundingClientRect(); const x = e.clientX - r.left; const y = e.clientY - r.top; const cX = r.width / 2; const cY = r.height / 2; const rX = ((y - cY) / cY) * -6; const rY = ((x - cX) / cX) * 6; card.style.transform = `perspective(1000px) rotateX(${rX}deg) rotateY(${rY}deg) scale(1.02)`; }; card.onmouseleave = () => { card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)`; }; }); }
+function initTiltEffect() { const cards = document.querySelectorAll('.tilt-card:not(.calendar-card)'); cards.forEach(card => { card.onmousemove = (e) => { const r = card.getBoundingClientRect(); const x = e.clientX - r.left; const y = e.clientY - r.top; const cX = r.width / 2; const cY = r.height / 2; const rX = ((y - cY) / cY) * -6; const rY = ((x - cX) / cX) * 6; card.style.transform = `perspective(1000px) rotateX(${rX}deg) rotateY(${rY}deg) scale(1.02)`; }; card.onmouseleave = () => { card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)`; }; }); }
 
 function startMediaSync() {
   let currentArt = "";
