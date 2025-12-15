@@ -2,6 +2,16 @@
 // 検索機能を独立したモジュールとして提供
 
 /**
+ * HTMLエスケープ関数 - XSS対策
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+/**
  * ユーティリティ: debounce関数
  */
 function debounce(func, wait) {
@@ -194,9 +204,10 @@ function setupSearchAutocomplete(input, t) {
             div.setAttribute('data-val', item.text);
             const icon = item.type === 'history' ? '🕒' : '🔍';
 
+            // XSS対策: item.textをエスケープ
             let innerHTML = `<div style="display:flex; align-items:center; flex:1; min-width:0;">
         <span style="opacity:0.6; margin-right:10px; flex-shrink:0;">${icon}</span> 
-        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.text}</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.text)}</span>
       </div>`;
 
             if (item.type === 'history') {

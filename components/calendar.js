@@ -1,6 +1,16 @@
 // Calendar Component - ES Module
 // カレンダー機能を独立したモジュールとして提供
 
+/**
+ * HTMLエスケープ関数 - XSS対策
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
 // 現在表示中の年・月を管理
 let displayYear = new Date().getFullYear();
 let displayMonth = new Date().getMonth();
@@ -62,10 +72,11 @@ async function openCalendarSettingsModal() {
             const isSelected = selectedSet.has(cal.id) || (cal.primary && selectedSet.has('primary'));
             const color = cal.backgroundColor || '#4285f4';
 
+            // XSS対策: カレンダー名をエスケープ
             item.innerHTML = `
-            <input type="checkbox" data-id="${cal.id}" data-color="${color}" ${isSelected ? 'checked' : ''}>
-            <span class="cal-color-dot" style="background:${color}"></span>
-            <span class="cal-name" title="${cal.summary}">${cal.summary}</span>
+            <input type="checkbox" data-id="${escapeHtml(cal.id)}" data-color="${escapeHtml(color)}" ${isSelected ? 'checked' : ''}>
+            <span class="cal-color-dot" style="background:${escapeHtml(color)}"></span>
+            <span class="cal-name" title="${escapeHtml(cal.summary)}">${escapeHtml(cal.summary)}</span>
         `;
             container.appendChild(item);
         });
@@ -407,7 +418,8 @@ async function renderCalendar() {
             const r = document.createElement('div');
             r.className = 'event-row';
             r.setAttribute('data-date', d);
-            r.innerHTML = `<span class="event-date-badge">${d}</span><span class="event-content">${timeHtml}${text}</span>`;
+            // XSS対策: イベントテキストをエスケープ
+            r.innerHTML = `<span class="event-date-badge">${d}</span><span class="event-content">${timeHtml}${escapeHtml(text)}</span>`;
             r.onclick = () => openEventModal(year, month, d);
             eventList.appendChild(r);
 
@@ -423,7 +435,8 @@ async function renderCalendar() {
             const timeStr = event.allDay ? '' : new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const color = event.backgroundColor || '#4285f4';
             r.style.borderLeftColor = color;
-            r.innerHTML = `<span class="event-date-badge event-badge-google" style="background:${color}">${d}</span><span class="event-content"><span class="google-icon">📅</span>${timeStr ? `<span class="event-time">${timeStr}</span>` : ''}${event.title}</span>`;
+            // XSS対策: イベントタイトルをエスケープ
+            r.innerHTML = `<span class="event-date-badge event-badge-google" style="background:${escapeHtml(color)}">${d}</span><span class="event-content"><span class="google-icon">📅</span>${timeStr ? `<span class="event-time">${escapeHtml(timeStr)}</span>` : ''}${escapeHtml(event.title)}</span>`;
             eventList.appendChild(r);
 
             if (isCurrentMonth && d === todayDate && !scrollTarget) scrollTarget = r;

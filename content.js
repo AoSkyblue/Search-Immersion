@@ -1,5 +1,31 @@
 let burnInInterval = null;
 
+/**
+ * HTMLエスケープ関数 - XSS対策
+ * ユーザー入力をHTMLに挿入する前に必ずこの関数を通す
+ */
+function escapeHtml(str) {
+  if (str == null) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+/**
+ * URL検証関数 - 悪意のあるURLを防ぐ
+ * @param {string} str - 検証するURL文字列
+ * @returns {boolean} 有効なHTTP/HTTPS URLの場合true
+ */
+function isValidUrl(str) {
+  if (!str || typeof str !== 'string') return false;
+  try {
+    const url = new URL(str);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 const defaultSettings = {
   accent: '#50E3C2',
   clockFont: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -687,9 +713,17 @@ function renderDock() {
     div.className = 'dock-item tilt-card dynamic-dock-item';
     if (item.icon && (item.icon.startsWith('http') || item.icon.startsWith('data:image'))) {
       div.style.overflow = 'hidden';
-      div.innerHTML = `<img src="${item.icon}" style="width:100%; height:100%; object-fit:cover; display:block; pointer-events:none;" onerror="this.style.display='none'; this.parentElement.innerText='${item.icon.replace(/'/g, "\\'")}';">`;
+      // XSS対策: imgタグをDOMで安全に作成
+      const img = document.createElement('img');
+      img.src = item.icon;
+      img.style.cssText = 'width:100%; height:100%; object-fit:cover; display:block; pointer-events:none;';
+      img.onerror = function () {
+        this.style.display = 'none';
+        this.parentElement.textContent = item.icon;
+      };
+      div.appendChild(img);
     } else {
-      div.innerText = item.icon;
+      div.textContent = item.icon;
     }
     div.title = item.url;
     div.onclick = () => { if (item.url.includes('%s')) { const input = document.getElementById('search-input'); const v = input.value; window.location.href = v ? item.url.replace('%s', encodeURIComponent(v)) : item.url.split('?')[0]; } else { window.location.href = item.url; } };
@@ -727,13 +761,37 @@ function renderDockSettingsList() {
   items.forEach((item, index) => {
     const row = document.createElement('div');
     row.className = 'dock-setting-row';
-    row.innerHTML = `
-      <div class="ds-label">${t('icon_label')}</div>
-      <input type="text" class="ds-icon" value="${item.icon}" placeholder="${t('icon_placeholder')}">
-      <div class="ds-label" style="margin-top:4px;">${t('url_label')}</div>
-      <input type="text" class="ds-url" value="${item.url}" placeholder="${t('url_label')}">
-      <button class="ds-del">×</button>
-    `;
+    // XSS対策: テンプレートリテラルではなくDOM操作で安全に構築
+    const iconLabel = document.createElement('div');
+    iconLabel.className = 'ds-label';
+    iconLabel.textContent = t('icon_label');
+
+    const iconInput = document.createElement('input');
+    iconInput.type = 'text';
+    iconInput.className = 'ds-icon';
+    iconInput.value = item.icon;
+    iconInput.placeholder = t('icon_placeholder');
+
+    const urlLabel = document.createElement('div');
+    urlLabel.className = 'ds-label';
+    urlLabel.style.marginTop = '4px';
+    urlLabel.textContent = t('url_label');
+
+    const urlInput = document.createElement('input');
+    urlInput.type = 'text';
+    urlInput.className = 'ds-url';
+    urlInput.value = item.url;
+    urlInput.placeholder = t('url_label');
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'ds-del';
+    delBtn.textContent = '×';
+
+    row.appendChild(iconLabel);
+    row.appendChild(iconInput);
+    row.appendChild(urlLabel);
+    row.appendChild(urlInput);
+    row.appendChild(delBtn);
     const iI = row.querySelector('.ds-icon');
     const uI = row.querySelector('.ds-url');
     const d = row.querySelector('.ds-del');
@@ -817,6 +875,12 @@ function fetchNews() {
     return;
   }
 
+  // URL検証: 有効なHTTP/HTTPS URLのみ許可
+  if (!isValidUrl(targetUrl)) {
+    list.innerHTML = `<div style="padding:10px; opacity:0.7; text-align:center;">${t('news_error')}</div>`;
+    return;
+  }
+
   chrome.runtime.sendMessage({ action: "fetchNews", url: targetUrl }, (res) => {
     if (!res || res.error || !res.data) {
       list.innerHTML = `<div style="padding:10px; opacity:0.7; text-align:center;">${t('news_error')}</div>`;
@@ -839,9 +903,13 @@ function fetchNews() {
         if (!items[i]) break;
         const div = document.createElement("div");
         div.className = "news-item";
-        div.innerText = items[i].querySelector("title").textContent;
-        const link = items[i].querySelector("link").textContent;
-        div.onclick = () => window.location.href = link;
+        // XSS対策: textContentを使用
+        div.textContent = items[i].querySelector("title")?.textContent || '';
+        const link = items[i].querySelector("link")?.textContent || '';
+        // URL検証: 有効なURLのみリダイレクト許可
+        if (isValidUrl(link)) {
+          div.onclick = () => window.location.href = link;
+        }
         list.appendChild(div);
       }
     } catch (e) {
